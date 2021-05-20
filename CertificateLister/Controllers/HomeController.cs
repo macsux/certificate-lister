@@ -24,7 +24,7 @@ namespace CertificateLister.Controllers
                 using var store = new X509Store(combo.name, combo.location, OpenFlags.ReadOnly);
                 var certs = store.Certificates
                     .Cast<X509Certificate2>()
-                    .Select(x => new CertInfo(x.FriendlyName, x.Thumbprint, x.Issuer, combo.name.ToString(), combo.ToString()))
+                    .Select(x => new CertInfo(x.FriendlyName, x.Thumbprint, x.Issuer, x.Verify()))
                     .ToArray();
                 return new CertStore(combo.name.ToString(), combo.location.ToString(), certs);
             });
@@ -36,5 +36,5 @@ namespace CertificateLister.Controllers
     }
 
     public record CertStore(string Name, string Location, CertInfo[] Certificates);
-    public record CertInfo(string Name, string Thumbprint, string Issuer, string StoreName, string StoreLocation);
+    public record CertInfo(string Name, string Thumbprint, string Issuer, bool IsChainValid);
 }
