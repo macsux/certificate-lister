@@ -1,0 +1,1 @@
+This will list out all certificates installed on the machine the way .NET sees them, grouped  by X509Store name and location.
