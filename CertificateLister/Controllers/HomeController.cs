@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Mvc;
@@ -24,8 +25,29 @@ namespace CertificateLister.Controllers
                 using var store = new X509Store(combo.name, combo.location, OpenFlags.ReadOnly);
                 var certs = store.Certificates
                     .Cast<X509Certificate2>()
-                    .Select(x => new CertInfo(x.FriendlyName, x.Thumbprint, x.Issuer, x.Verify()))
+                    .Select(cert =>
+                    {
+                        var chain = new X509Chain();
+                        chain.Build(cert);
+
+                        CertInfo certInfo = null;
+                        for (int i = chain.ChainElements.Count - 1; i >= 0; i--)
+                        {
+                            var certElement = chain.ChainElements[i];
+                            certInfo = new CertInfo(
+                                certElement.Certificate.FriendlyName,
+                                certElement.Certificate.Subject,
+                                certElement.Certificate.Thumbprint,
+                                certInfo,
+                                certElement.Certificate.Verify(),
+                                certElement.ChainElementStatus.Select(x => x.StatusInformation.ToString()).ToArray());
+                        }
+                   
+                        chain.Reset();
+                        return certInfo;
+                    })
                     .ToArray();
+                
                 return new CertStore(combo.name.ToString(), combo.location.ToString(), certs);
             });
             
@@ -35,6 +57,6 @@ namespace CertificateLister.Controllers
         
     }
 
-    public record CertStore(string Name, string Location, CertInfo[] Certificates);
-    public record CertInfo(string Name, string Thumbprint, string Issuer, bool IsChainValid);
+    public record CertStore(string StoreName, string StoreLocation, CertInfo[] Certificates);
+    public record CertInfo(string Name, string Subject, string Thumbprint, CertInfo Issuer, bool IsValid, string[] ValidationMessages);
 }
