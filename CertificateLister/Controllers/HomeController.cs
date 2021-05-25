@@ -15,6 +15,8 @@ namespace CertificateLister.Controllers
         {
             var locations = Enum.GetValues<StoreLocation>();
             var names = Enum.GetValues<StoreName>();
+            if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
+                names = names.Where(x => x is StoreName.Root or StoreName.CertificateAuthority).ToArray();
             var combos = from location in locations.DefaultIfEmpty()
                 from name in names.DefaultIfEmpty()
                 select new {location, name};
