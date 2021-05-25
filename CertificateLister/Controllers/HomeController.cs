@@ -15,16 +15,31 @@ namespace CertificateLister.Controllers
         {
             var locations = Enum.GetValues<StoreLocation>();
             var names = Enum.GetValues<StoreName>();
-            if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
-                names = names.Where(x => x is StoreName.Root or StoreName.CertificateAuthority).ToArray();
+            var isUnixOs = Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX;
+            
             var combos = from location in locations.DefaultIfEmpty()
                 from name in names.DefaultIfEmpty()
                 select new {location, name};
-            
+
+            bool ValidUnitStores(StoreName name, StoreLocation location)
+            {
+                if (isUnixOs && location is StoreLocation.LocalMachine)
+                {
+                    if (name is StoreName.Root or StoreName.CertificateAuthority)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                return true;
+            }
+
             return locations
                 .Select(location =>
                     {
-                        return (location, stores: names.Select(storeName =>
+                        return (location, stores: names.Where(x => ValidUnitStores(x, location)).Select(storeName =>
                         {
                             using var store = new X509Store(storeName, location, OpenFlags.ReadOnly);
                             var certs = store.Certificates
