@@ -25,20 +25,11 @@ namespace CertificateLister.Controllers
             X509Certificate2 cert = null;
             using var client = new TcpClient();
     
-            //ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3;           
             client.Connect(host, port);
 
             using var ssl = new SslStream(client.GetStream(), false, ValidateServerCertificate, null);
             ssl.AuthenticateAsClient(host);
-            // try
-            // {
-            //     ssl.AuthenticateAsClient(host);
-            // }
-            // catch (Exception e)
-            // {
-            //     _logger.LogInformation(cer);
-            //     return cert;
-            // }
+
             cert = new X509Certificate2(ssl.RemoteCertificate);
             return ToCertInfo(cert);
         }
@@ -103,6 +94,7 @@ namespace CertificateLister.Controllers
                     certElement.Certificate.FriendlyName,
                     certElement.Certificate.Subject,
                     certElement.Certificate.Thumbprint,
+                    certElement.Certificate.SerialNumber,
                     certElement.Certificate.NotBefore,
                     certElement.Certificate.NotAfter,
                     certInfo,
@@ -117,5 +109,5 @@ namespace CertificateLister.Controllers
     }
 
     
-    public record CertInfo(string Name, string Subject, string Thumbprint, DateTime validFrom, DateTime validTo, CertInfo Issuer, bool IsValid, string[] ValidationMessages);
+    public record CertInfo(string Name, string Subject, string Thumbprint, string SerialNumber, DateTime validFrom, DateTime validTo, CertInfo Issuer, bool IsValid, string[] ValidationMessages);
 }
