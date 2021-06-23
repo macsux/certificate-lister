@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -25,10 +26,19 @@ namespace CertificateLister.Controllers
             X509Certificate2 cert = null;
             using var client = new TcpClient();
     
+            
+            var sslClientOptions = new SslClientAuthenticationOptions()
+            {
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13, 
+                TargetHost = host,  
+                RemoteCertificateValidationCallback = ValidateServerCertificate,
+                CipherSuitesPolicy = new CipherSuitesPolicy(Enum.GetValues<TlsCipherSuite>())
+            };
             client.Connect(host, port);
 
             using var ssl = new SslStream(client.GetStream(), false, ValidateServerCertificate, null);
-            ssl.AuthenticateAsClient(host);
+            ssl.AuthenticateAsClient(sslClientOptions);
 
             cert = new X509Certificate2(ssl.RemoteCertificate);
             return ToCertInfo(cert);
